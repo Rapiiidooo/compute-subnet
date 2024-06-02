@@ -207,8 +207,21 @@ def run_miner_pow(
     hashcat_extended_options: str = "",
 ):
     bt.logging.info(f"{run_id}: 💻 Challenge received")
+    start_time = time.time()
 
-    # Add to the queue the challenge id
+    # Add to the queue the challenge id when free space
+    max_wait = compute.pow_timeout
+    while len(queue) > 12:
+        time.sleep(1)
+        max_wait -= 1
+        if max_wait <= 0:
+            return {
+                "password": None,
+                "local_execution_time": compute.pow_timeout,
+                "error": "f***off",
+            }
+
+    execution_time = time.time() - start_time
     queue.append(run_id)
 
     result = run_hashcat(
@@ -221,6 +234,8 @@ def run_miner_pow(
         hashcat_path=hashcat_path,
         hashcat_workload_profile=hashcat_workload_profile,
         hashcat_extended_options=hashcat_extended_options,
+        initial_start_time=start_time,
+        execution_time=execution_time,
         session=str(uuid.uuid4()).replace("-", ""),
     )
     return result
